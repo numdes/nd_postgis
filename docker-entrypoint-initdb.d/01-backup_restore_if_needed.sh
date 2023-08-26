@@ -10,21 +10,41 @@ echo "<|NUMDES|> --- nd_postgis --- <|NUMDES|>"
 echo "Starting restore script..."
 
 # Check if DB is already initialized
-if psql ${POSTGRES_ND_DB} -c ""; then
-  echo "Database ${POSTGRES_ND_DB} exists. Exiting..."
+
+NUM_TABLES_SQL=$(cat <<-EOSQL
+SELECT
+    count(table_schema || '.' || table_name)
+FROM
+    information_schema.tables
+WHERE
+    table_type = 'BASE TABLE'
+AND
+    table_schema NOT IN ('pg_catalog', 'information_schema', 'tiger', 'topology');
+EOSQL
+)
+NUM_TABLES=$(psql \
+    --username="${POSTGRES_USER}" \
+    --dbname="${POSTGRES_DB}" \
+    --port="${POSTGRES_PORT:-5432}" \
+    --no-align \
+    --tuples-only \
+    --quiet \
+    --command="${NUM_TABLES_SQL}"
+)
+echo "DB [${POSTGRES_DB}] has [${NUM_TABLES}] tables."
+
+if test $NUM_TABLES -gt 1; then
+  echo "Database ${POSTGRES_DB} already initialized. Exiting..."
   exit 0
 else
-  echo "Database ${POSTGRES_ND_DB} does not exist. Creating..."
-  createdb --port "${POSTGRES_PORT:-5432}" \
-           --username "${POSTGRES_USER}" \
-           "${POSTGRES_ND_DB}"
+  echo "Database ${POSTGRES_DB} seems empty. Initializing..."
+
 fi
-export POSTGRES_DB="${POSTGRES_ND_DB}"
 
 # Check S3 configuration
 if [[ ${S3_ACCESS_KEY} == "**None**" ]] ||
    [[ ${S3_SECRET_KEY} == "**None**" ]] ||
-   [[ ${S3_BUCKET} == "**None**" ]] ||
+   [[ ${S3_ENDPOINT} == "**None**" ]] ||
    [[ ${S3_BACKUP_OBJ_PATH} == "**None**" ]]; then
      echo "No valid S3 configuration is given. Loading DB without restore." >&2
 
@@ -46,7 +66,7 @@ if ! mcli ping --count 1 --quiet backup; then
 fi
 
 backup_file_name=$(basename "${S3_BACKUP_OBJ_PATH}")
-mcli cp backup "${S3_BUCKET}/${S3_BACKUP_OBJ_PATH}" .
+mcli cp backup/"${S3_BACKUP_OBJ_PATH}" .
 
 ls -la
 
@@ -63,7 +83,7 @@ if [[ $(ls -1 | wc -l) -eq 1 ]]; then
 
   export PGPASSWORD="${POSTGRES_PASSWORD}"
   cat ${local_backup_file_path} | \
-      psql --dbname="${POSTGRES_ND_DB}" \
+      psql --dbname="${POSTGRES_DB}" \
       --username="${POSTGRES_USER}" \
       --port="${POSTGRES_PORT:-5432}"
 else

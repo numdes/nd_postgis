@@ -18,19 +18,17 @@ RUN apt-get update \
 
 RUN mcli --version
 
-ENV POSTGRES_ND_DB="**None**" \
+ENV POSTGRES_DB="**None**" \
     POSTGRES_PORT=5432 \
     POSTGRES_USER=postgres \
     POSTGRES_PASSWORD="**None**" \
     S3_ACCESS_KEY="**None**" \
     S3_SECRET_KEY="**None**" \
-    S3_BUCKET="**None**" \
     S3_ENDPOINT="**None**" \
-    S3_BUCKET_SUBDIR_PATH="" \
-    S3_BACKUP_FILENAME="**None**" \
+    S3_BACKUP_OBJ_PATH="**None**" \
     LOCAL_DOWNLOAD_PATH="/tmp"
 
 COPY docker-entrypoint-initdb.d/01-backup_restore_if_needed.sh docker-entrypoint-initdb.d/01-backup_restore_if_needed.sh
 
 HEALTHCHECK --interval=1s --timeout=3s --retries=15 \
-    CMD pg_isready --username=$POSTGRES_USER --dbname=$POSTGRES_ND_DB --port=$POSTGRES_PORT || exit 1
+    CMD pg_isready --username=$POSTGRES_USER --dbname=$POSTGRES_DB --port=$POSTGRES_PORT || exit 1

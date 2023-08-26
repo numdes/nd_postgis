@@ -16,16 +16,14 @@ will not starts.
 
 | Variable name         | Default value | Is mandatory | Description                                                                                                                                                 |
 |-----------------------|:-------------:|:------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| POSTGRES_ND_DB      |       -       |      NO      | Desired name of DB. If variable is set on startup empty DB with this name will be created                                                                   |
+| POSTGRES_DB      |       -       |      NO      | Desired name of DB. If variable is set on startup empty DB with this name will be created                                                                   |
 | POSTGRES_PORT         |     5432      |      NO      | Changes default TCP port of PostgreSQL                                                                                                                      |
 | POSTGRES_USER         |   postgres    |      NO      | Set user name                                                                                                                                               |
 | POSTGRES_PASSWORD     |       -       |     YES      | [Mandatory](https://github.com/docker-library/docs/blob/master/postgres/README.md#postgres_password) variable to start container. Sets superuser's password |
 | S3_ENDPOINT           |       -       |      NO      | S3 Storage endpoint's URL.[^1]                                                                                                                              |
 | S3_ACCESS_KEY         |       -       |      NO      | S3 Storage "username".[^1]                                                                                                                                  |
 | S3_SECRET_KEY         |       -       |      NO      | S3 Storage "password".[^1]                                                                                                                                  |
-| S3_BUCKET             |       -       |      NO      | Bucket name.[^1]                                                                                                                                            |
-| S3_BUCKET_SUBDIR_PATH |       -       |      NO      | Path inside bucket (e.g. DB_NAME/TIMESTAMP/). **-=IMPORTANT=- If subdir path exists the variable MUST be ended by  / (slash) -=IMPORTANT=-**[^1]            |
-| S3_BACKUP_FILENAME    |       -       |      NO      | Backup filename.[^1] Must be either *.tar.gz or *.sql                                                                                                       |
+| S3_BACKUP_OBJ_PATH    |       -       |      NO      | Full path to DB dump including bucket name and file name.                                                                                                                                        |
 | LOCAL_DOWNLOAD_PATH   |       -       |      NO      | Path to download files from S3. Default is `/tmp`                                                                                                            |
 
 [^1]: If not set restore function will not work
@@ -40,16 +38,14 @@ docker build . --tag nd_postgis:v0.1.0
 
 ```
 docker run --rm --detach \
-    -e POSTGRES_ND_DB=SOME-DB-NAME
+    -e POSTGRES_DB=SOME-DB-NAME
     -e POSTGRES_PASSWORD=SECRET_PASSWORD \
     -e POSTGRES_USER=postgres \
     -e POSTGRES_PORT=5432 \
     -e S3_ENDPOINT=https://YOUR-S3 \
     -e S3_ACCESS_KEY=KEY-ID \
     -e S3_SECRET_KEY=KEY-SECRET \
-    -e S3_BUCKET=BUCKET-NAME \
-    -e S3_BUCKET_SUBDIR_PATH=SOME_PATH/TO_BACKUP/ \
-    -e S3_BACKUP_FILENAME=BACKUP-FILENAME \
+    -e S3_BACKUP_OBJ_PATH=SOME_PATH/TO_BACKUP/Dump.tar.gz \
     -v pgdata:/var/lib/postgresql/data \
     nd_postgis:v0.1.0
 ```

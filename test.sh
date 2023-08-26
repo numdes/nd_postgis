@@ -2,6 +2,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+./build.sh
+
 # MinIO configuration
 local_minio_port=${LOCAL_S3_PORT:-59000}
 minio_container_name=${MINIO_CONTAINER_NAME:-"nd-minio-test"}
@@ -37,7 +39,7 @@ docker volume create "$minio_volume" 1> /dev/null
 echo "Run image [$postgis_image] with name [$postgis_container_name] on port [$local_db_port] and network [$test_network_name]"
 docker run --rm \
     --detach \
-    --env POSTGRES_ND_DB=$test_db_name \
+    --env POSTGRES_DB=$test_db_name \
     --env POSTGRES_USER=$test_db_user \
     --env POSTGRES_PASSWORD=$test_db_user \
     --volume $postgis_volume:/var/lib/postgresql/data \
@@ -114,13 +116,12 @@ echo "Full s3 path: $full_backup_path"
 docker volume create "$postgis_volume"
 docker run --rm \
     --detach \
-    --env POSTGRES_ND_DB=$test_db_name \
+    --env POSTGRES_DB=$test_db_name \
     --env POSTGRES_USER=$test_db_user \
     --env POSTGRES_PASSWORD=$test_db_user \
     --env S3_ENDPOINT="http://$minio_container_name:9000" \
     --env S3_ACCESS_KEY=$minio_user \
     --env S3_SECRET_KEY=$minio_password \
-    --env S3_BUCKET=backup \
     --env S3_BACKUP_OBJ_PATH="$full_backup_path" \
     --volume $postgis_volume:/var/lib/postgresql/data \
     --publish "$local_db_port":5432 \
